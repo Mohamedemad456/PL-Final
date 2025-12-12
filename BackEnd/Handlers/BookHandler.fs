@@ -34,3 +34,16 @@ let private getAllBooksAsync (db: AppDbContext) (searchTerm: string option) : Ta
             let query = query.OrderBy(fun b -> b.Title)
             return! query.ToListAsync()
         }
+        
+let private createBookInDbAsync (db: AppDbContext) (book: Book) : Task<Result<Book, string>> =
+        task {
+            try
+                db.Books.Add(book) |> ignore
+                let! _ = db.SaveChangesAsync()
+                return Ok book
+            with
+            | :? DbUpdateException as ex ->
+                return Error $"Failed to create book: {ex.Message}"
+            | ex ->
+                return Error $"Unexpected error: {ex.Message}"
+        }        
