@@ -34,7 +34,7 @@ let private getAllBooksAsync (db: AppDbContext) (searchTerm: string option) : Ta
             let query = query.OrderBy(fun b -> b.Title)
             return! query.ToListAsync()
         }
-        
+
 let private createBookInDbAsync (db: AppDbContext) (book: Book) : Task<Result<Book, string>> =
         task {
             try
@@ -47,3 +47,39 @@ let private createBookInDbAsync (db: AppDbContext) (book: Book) : Task<Result<Bo
             | ex ->
                 return Error $"Unexpected error: {ex.Message}"
         }        
+
+let private updateBookInDbAsync (db: AppDbContext) (book: Book) : Task<Result<Book, string>> =
+        task {
+            try
+                // Check if entity is already tracked
+                let entry = db.Entry(book)
+                if entry.State = EntityState.Detached then
+                    db.Books.Update(book) |> ignore
+                // If already tracked, changes are automatically detected
+                let! _ = db.SaveChangesAsync()
+                return Ok book
+            with
+            | :? DbUpdateException as ex ->
+                let innerMsg = if ex.InnerException <> null then ex.InnerException.Message else ""
+                return Error $"Failed to update book: {ex.Message}. Inner: {innerMsg}"
+            | ex ->
+                return Error $"Unexpected error: {ex.Message}. Type: {ex.GetType().Name}"
+        }
+
+ let private deleteBookFromDbAsync (db: AppDbContext) (bookId: Guid) : Task<Result<unit, string>> =
+        task {
+            try
+                let! bookOpt = findBookByIdAsync db bookId
+                match bookOpt with
+                | None -> return Error "Book not found"
+                | Some book ->
+                    db.Books.Remove(book) |> ignore
+                    let! _ = db.SaveChangesAsync()
+                    return Ok ()
+            with
+            | :? DbUpdateException as ex ->
+                return Error $"Failed to delete book: {ex.Message}"
+            | ex ->
+                return Error $"Unexpected error: {ex.Message}"
+        }
+       
