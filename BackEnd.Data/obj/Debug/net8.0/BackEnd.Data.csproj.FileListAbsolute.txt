@@ -1,0 +1,15 @@
+D:\c\Pl-3\BackEnd.Data\bin\Debug\net8.0\BackEnd.Data.deps.json
+D:\c\Pl-3\BackEnd.Data\bin\Debug\net8.0\BackEnd.Data.runtimeconfig.json
+D:\c\Pl-3\BackEnd.Data\bin\Debug\net8.0\BackEnd.Data.dll
+D:\c\Pl-3\BackEnd.Data\bin\Debug\net8.0\BackEnd.Data.pdb
+D:\c\Pl-3\BackEnd.Data\obj\Debug\net8.0\BackEnd.Data.csproj.AssemblyReference.cache
+D:\c\Pl-3\BackEnd.Data\obj\Debug\net8.0\BackEnd.Data.GeneratedMSBuildEditorConfig.editorconfig
+D:\c\Pl-3\BackEnd.Data\obj\Debug\net8.0\BackEnd.Data.AssemblyInfoInputs.cache
+D:\c\Pl-3\BackEnd.Data\obj\Debug\net8.0\BackEnd.Data.AssemblyInfo.cs
+D:\c\Pl-3\BackEnd.Data\obj\Debug\net8.0\BackEnd.Data.csproj.CoreCompileInputs.cache
+D:\c\Pl-3\BackEnd.Data\obj\Debug\net8.0\BackEnd.Data.dll
+D:\c\Pl-3\BackEnd.Data\obj\Debug\net8.0\refint\BackEnd.Data.dll
+D:\c\Pl-3\BackEnd.Data\obj\Debug\net8.0\BackEnd.Data.pdb
+D:\c\Pl-3\BackEnd.Data\obj\Debug\net8.0\BackEnd.Data.genruntimeconfig.cache
+D:\c\Pl-3\BackEnd.Data\obj\Debug\net8.0\ref\BackEnd.Data.dll
+D:\c\Pl-3\BackEnd.Data\obj\Debug\net8.0\BackEnd.Data.sourcelink.json
