@@ -82,4 +82,9 @@ let private updateBookInDbAsync (db: AppDbContext) (book: Book) : Task<Result<Bo
             | ex ->
                 return Error $"Unexpected error: {ex.Message}"
         }
-       
+
+ let getBooks (db: AppDbContext) (searchTerm: string option) : Task<IResult> =
+        task {
+            let! books = getAllBooksAsync db searchTerm
+            return Results.Ok(books)
+        }      
