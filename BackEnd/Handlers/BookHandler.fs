@@ -19,3 +19,18 @@ let private findBookByIdAsync (db: AppDbContext) (bookId: Guid) : Task<Option<Bo
                    | null -> None
                    | _ -> Some book
         }
+
+let private getAllBooksAsync (db: AppDbContext) (searchTerm: string option) : Task<System.Collections.Generic.List<Book>> =
+        task {
+            let mutable query = db.Books.AsQueryable()
+            query <- match searchTerm with
+                     | Some term when not (String.IsNullOrWhiteSpace(term)) ->
+                         let termLower = term.ToLower()
+                         query.Where(fun b -> 
+                             b.Title.ToLower().Contains(termLower) || 
+                             b.Author.ToLower().Contains(termLower) ||
+                             (b.ISBN <> null && b.ISBN.ToLower().Contains(termLower)))
+                     | _ -> query
+            let query = query.OrderBy(fun b -> b.Title)
+            return! query.ToListAsync()
+        }
