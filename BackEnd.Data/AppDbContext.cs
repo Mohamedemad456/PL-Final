@@ -1,5 +1,3 @@
-// Role: Storage Developer
-// Developer: Youssef Amr
 using Microsoft.EntityFrameworkCore;
 using BackEnd.Data.Models;
 
