@@ -10,18 +10,6 @@ open System.Linq
 open System.Threading.Tasks
 open Microsoft.FSharp.Core
 
-namespace BackEnd.Handlers
-
-open Microsoft.AspNetCore.Http
-open Microsoft.AspNetCore.Http.HttpResults
-open Microsoft.EntityFrameworkCore
-open BackEnd.Data
-open BackEnd.Data.Models
-open System
-open System.Linq
-open System.Threading.Tasks
-open Microsoft.FSharp.Core
-
 module BookHandler =
 
     let private validateBook (title: string) (author: string) (totalCopies: int) : Result<unit, string> =
@@ -91,12 +79,31 @@ module BookHandler =
                 match bookOpt with
                 | None -> return Error "Book not found"
                 | Some book ->
-                    db.Books.Remove(book) |> ignore
-                    let! _ = db.SaveChangesAsync()
-                    return Ok ()
+                    // Check if there are any borrowings associated with this book
+                    let! borrowingsCount = db.Borrowings.Where(fun b -> b.BookId = bookId).CountAsync()
+                    if borrowingsCount > 0 then
+                        // Check if there are any active borrowings
+                        let! activeBorrowingsCount = db.Borrowings.Where(fun b -> b.BookId = bookId && (b.Status = "Active" || b.Status = "Overdue")).CountAsync()
+                        if activeBorrowingsCount > 0 then
+                            return Error $"Cannot delete book: There are {activeBorrowingsCount} active or overdue borrowings associated with this book. Please return all borrowed copies first."
+                        else
+                            // Delete all associated borrowings (all are returned)
+                            let! borrowings = db.Borrowings.Where(fun b -> b.BookId = bookId).ToListAsync()
+                            for borrowing in borrowings do
+                                db.Borrowings.Remove(borrowing) |> ignore
+                            // Now delete the book
+                            db.Books.Remove(book) |> ignore
+                            let! _ = db.SaveChangesAsync()
+                            return Ok ()
+                    else
+                        // No borrowings, safe to delete
+                        db.Books.Remove(book) |> ignore
+                        let! _ = db.SaveChangesAsync()
+                        return Ok ()
             with
             | :? DbUpdateException as ex ->
-                return Error $"Failed to delete book: {ex.Message}"
+                let innerMsg = if ex.InnerException <> null then ex.InnerException.Message else ""
+                return Error $"Failed to delete book: {ex.Message}. Inner: {innerMsg}"
             | ex ->
                 return Error $"Unexpected error: {ex.Message}"
         }

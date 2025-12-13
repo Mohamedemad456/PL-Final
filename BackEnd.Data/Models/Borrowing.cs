@@ -31,11 +31,9 @@ public class Borrowing
     
     // Navigation properties
     [ForeignKey("UserId")]
-    [JsonIgnore]
     public virtual User? User { get; set; }
     
     [ForeignKey("BookId")]
-    [JsonIgnore]
     public virtual Book? Book { get; set; }
 }
 
