@@ -1,5 +1,3 @@
-// Role: Authentication & Authorization
-// Developer: Mohamed Emad
 namespace BackEnd.Handlers
 
 open Microsoft.AspNetCore.Http
@@ -16,27 +14,18 @@ open System.Text
 
 module AuthHandler =
 
-    // ============================================
-    // Password Hashing Functions (Pure Functions)
-    // ============================================
 
-    /// Hash a password using SHA256 (for production, consider BCrypt)
     let hashPassword (password: string) : string =
         use sha256 = SHA256.Create()
         let bytes = Encoding.UTF8.GetBytes(password)
         let hash = sha256.ComputeHash(bytes)
         Convert.ToBase64String(hash)
 
-    /// Verify a password against a hash
     let verifyPassword (password: string) (hash: string) : bool =
         let passwordHash = hashPassword password
         passwordHash = hash
 
-    // ============================================
-    // Validation Functions (Pure Functions)
-    // ============================================
 
-    /// Validates registration input
     let validateRegistration (email: string) (username: string) (password: string) : Result<string * string * string, string> =
         if System.String.IsNullOrWhiteSpace(email) then
             Microsoft.FSharp.Core.Error "Email is required"
@@ -53,7 +42,6 @@ module AuthHandler =
         else
             Microsoft.FSharp.Core.Ok (email, username, password)
 
-    /// Validates login input
     let validateLogin (email: string) (password: string) : Result<string * string, string> =
         if System.String.IsNullOrWhiteSpace(email) then
             Microsoft.FSharp.Core.Error "Email is required"
@@ -62,29 +50,22 @@ module AuthHandler =
         else
             Microsoft.FSharp.Core.Ok (email, password)
 
-    // ============================================
-    // Database Query Functions (Async, Functional)
-    // ============================================
 
-    /// Find user by email - returns Option type
+
     let findUserByEmailAsync (db: AppDbContext) (email: string) =
         task {
             let! user = db.Users.FirstOrDefaultAsync(fun u -> u.Email = email)
             return if isNull (box user) then None else Some user
         }
 
-    /// Check if email already exists
     let emailExistsAsync (db: AppDbContext) (email: string) =
         task {
             let! exists = db.Users.AnyAsync(fun u -> u.Email = email)
             return exists
         }
 
-    // ============================================
-    // Business Logic Functions (Composition)
-    // ============================================
 
-    /// Creates a new user with hashed password
+
     let createUser (email: string) (username: string) (password: string) : User =
         let user = User()
         user.Id <- Guid.NewGuid()
@@ -94,7 +75,6 @@ module AuthHandler =
         user.CreatedAt <- DateTime.UtcNow
         user
 
-    /// Saves user to database - returns Result type
     let saveUserAsync (db: AppDbContext) (user: User) =
         task {
             try
@@ -108,30 +88,23 @@ module AuthHandler =
                 return Microsoft.FSharp.Core.Error $"Unexpected error: {ex.Message}"
         }
 
-    // ============================================
-    // Handler Functions (Composed from Pure Functions)
-    // ============================================
+
 
     /// Register a new user
     let register (db: AppDbContext) (email: string) (username: string) (password: string) =
         task {
-            // Step 1: Validate input
             match validateRegistration email username password with
             | Microsoft.FSharp.Core.Error validationError ->
                 return Results.BadRequest(validationError)
             | Microsoft.FSharp.Core.Ok (validEmail, validUsername, validPassword) ->
-                // Step 2: Check if email already exists
                 let! emailExists = emailExistsAsync db validEmail
                 if emailExists then
                     return Results.BadRequest("Email is already registered")
                 else
-                    // Step 3: Create user with hashed password
                     let newUser = createUser validEmail validUsername validPassword
                     
-                    // Step 4: Save to database
                     let! saveResult = saveUserAsync db newUser
                     
-                    // Step 5: Return result
                     return match saveResult with
                            | Microsoft.FSharp.Core.Ok savedUser ->
                                Results.Created(
@@ -151,18 +124,14 @@ module AuthHandler =
                                )
         }
 
-    /// Login user
     let login (db: AppDbContext) (email: string) (password: string) =
         task {
-            // Step 1: Validate input
             match validateLogin email password with
             | Microsoft.FSharp.Core.Error validationError ->
                 return Results.BadRequest(validationError)
             | Microsoft.FSharp.Core.Ok (validEmail, validPassword) ->
-                // Step 2: Find user by email
                 let! userOption = findUserByEmailAsync db validEmail
                 
-                // Step 3: Verify user exists and password matches
                 return match userOption with
                        | None ->
                            Results.Json(
@@ -171,7 +140,6 @@ module AuthHandler =
                            )
                        | Some user ->
                            if verifyPassword validPassword user.PasswordHash then
-                               // Login successful
                                Results.Ok({|
                                    userId = user.Id
                                    id = user.Id
@@ -180,7 +148,6 @@ module AuthHandler =
                                    message = "Login successful"
                                |})
                            else
-                               // Invalid password
                                Results.Json(
                                    {| message = "Invalid email or password" |},
                                    statusCode = 401

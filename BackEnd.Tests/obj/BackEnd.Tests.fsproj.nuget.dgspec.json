@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\c\\Pl-3\\backend.tests\\BackEnd.Tests.fsproj": {}
+    "D:\\c\\PL project\\backend.tests\\BackEnd.Tests.fsproj": {}
   },
   "projects": {
-    "D:\\c\\Pl-3\\BackEnd.Data\\BackEnd.Data.csproj": {
+    "D:\\c\\PL project\\BackEnd.Data\\BackEnd.Data.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\c\\Pl-3\\BackEnd.Data\\BackEnd.Data.csproj",
+        "projectUniqueName": "D:\\c\\PL project\\BackEnd.Data\\BackEnd.Data.csproj",
         "projectName": "BackEnd.Data",
-        "projectPath": "D:\\c\\Pl-3\\BackEnd.Data\\BackEnd.Data.csproj",
+        "projectPath": "D:\\c\\PL project\\BackEnd.Data\\BackEnd.Data.csproj",
         "packagesPath": "C:\\Users\\Access\\.nuget\\packages\\",
-        "outputPath": "D:\\c\\Pl-3\\BackEnd.Data\\obj\\",
+        "outputPath": "D:\\c\\PL project\\BackEnd.Data\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Access\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -84,14 +84,14 @@
         }
       }
     },
-    "D:\\c\\Pl-3\\backend.tests\\BackEnd.Tests.fsproj": {
+    "D:\\c\\PL project\\backend.tests\\BackEnd.Tests.fsproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\c\\Pl-3\\backend.tests\\BackEnd.Tests.fsproj",
+        "projectUniqueName": "D:\\c\\PL project\\backend.tests\\BackEnd.Tests.fsproj",
         "projectName": "BackEnd.Tests",
-        "projectPath": "D:\\c\\Pl-3\\backend.tests\\BackEnd.Tests.fsproj",
+        "projectPath": "D:\\c\\PL project\\backend.tests\\BackEnd.Tests.fsproj",
         "packagesPath": "C:\\Users\\Access\\.nuget\\packages\\",
-        "outputPath": "D:\\c\\Pl-3\\backend.tests\\obj\\",
+        "outputPath": "D:\\c\\PL project\\backend.tests\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Access\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -107,8 +107,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\c\\Pl-3\\BackEnd\\BackEnd.fsproj": {
-                "projectPath": "D:\\c\\Pl-3\\BackEnd\\BackEnd.fsproj"
+              "D:\\c\\PL project\\BackEnd\\BackEnd.fsproj": {
+                "projectPath": "D:\\c\\PL project\\BackEnd\\BackEnd.fsproj"
               }
             }
           }
@@ -175,14 +175,14 @@
         }
       }
     },
-    "D:\\c\\Pl-3\\BackEnd\\BackEnd.fsproj": {
+    "D:\\c\\PL project\\BackEnd\\BackEnd.fsproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\c\\Pl-3\\BackEnd\\BackEnd.fsproj",
+        "projectUniqueName": "D:\\c\\PL project\\BackEnd\\BackEnd.fsproj",
         "projectName": "BackEnd",
-        "projectPath": "D:\\c\\Pl-3\\BackEnd\\BackEnd.fsproj",
+        "projectPath": "D:\\c\\PL project\\BackEnd\\BackEnd.fsproj",
         "packagesPath": "C:\\Users\\Access\\.nuget\\packages\\",
-        "outputPath": "D:\\c\\Pl-3\\BackEnd\\obj\\",
+        "outputPath": "D:\\c\\PL project\\BackEnd\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Access\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -198,8 +198,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\c\\Pl-3\\BackEnd.Data\\BackEnd.Data.csproj": {
-                "projectPath": "D:\\c\\Pl-3\\BackEnd.Data\\BackEnd.Data.csproj"
+              "D:\\c\\PL project\\BackEnd.Data\\BackEnd.Data.csproj": {
+                "projectPath": "D:\\c\\PL project\\BackEnd.Data\\BackEnd.Data.csproj"
               }
             }
           }

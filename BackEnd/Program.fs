@@ -20,7 +20,6 @@ module Program =
 
     let builder = WebApplication.CreateBuilder()
 
-    // Configure JSON serialization to handle reference cycles
     builder.Services.ConfigureHttpJsonOptions(fun options ->
         options.SerializerOptions.ReferenceHandler <- ReferenceHandler.IgnoreCycles
         options.SerializerOptions.WriteIndented <- true

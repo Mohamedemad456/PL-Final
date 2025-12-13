@@ -8475,11 +8475,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\c\\Pl-3\\BackEnd.Tests\\BackEnd.Tests.fsproj",
+      "projectUniqueName": "D:\\c\\PL project\\backend.tests\\BackEnd.Tests.fsproj",
       "projectName": "BackEnd.Tests",
-      "projectPath": "D:\\c\\Pl-3\\BackEnd.Tests\\BackEnd.Tests.fsproj",
+      "projectPath": "D:\\c\\PL project\\backend.tests\\BackEnd.Tests.fsproj",
       "packagesPath": "C:\\Users\\Access\\.nuget\\packages\\",
-      "outputPath": "D:\\c\\Pl-3\\BackEnd.Tests\\obj\\",
+      "outputPath": "D:\\c\\PL project\\backend.tests\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Access\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -8495,8 +8495,8 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "D:\\c\\Pl-3\\BackEnd\\BackEnd.fsproj": {
-              "projectPath": "D:\\c\\Pl-3\\BackEnd\\BackEnd.fsproj"
+            "D:\\c\\PL project\\BackEnd\\BackEnd.fsproj": {
+              "projectPath": "D:\\c\\PL project\\BackEnd\\BackEnd.fsproj"
             }
           }
         }
