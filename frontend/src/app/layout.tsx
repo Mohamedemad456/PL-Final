@@ -1,0 +1,40 @@
+// Role: UI Developer
+// Developer: Mohamed Emad
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+import { Nav } from "@/components/nav";
+import { Toaster } from "@/components/ui/sonner";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Library Management System",
+  description: "A modern library management system for browsing, borrowing, and managing books",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <Nav />
+        {children}
+        <Toaster position="center" closeButton richColors />
+      </body>
+    </html>
+  );
+}
