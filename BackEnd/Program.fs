@@ -112,6 +112,84 @@ module Program =
         .Produces(400)
         .Produces(401) |> ignore
 
+    // Book endpoints
+    app.MapGet("/api/books", 
+        System.Func<AppDbContext, Microsoft.AspNetCore.Http.HttpContext, System.Threading.Tasks.Task<Microsoft.AspNetCore.Http.IResult>>(
+            fun db ctx -> 
+                let searchTerm = match ctx.Request.Query.TryGetValue("search") with
+                                 | true, values when values.Count > 0 -> Some (values.[0].ToString())
+                                 | _ -> None
+                BookHandler.getBooks db searchTerm))
+        .WithName("GetBooks")
+        .WithTags("Books")
+        .WithSummary("Get all books")
+        .WithDescription("Retrieves a list of all books. Optionally search by title, author, or ISBN using the 'search' query parameter.") |> ignore
+    
+    app.MapGet("/api/books/{id:guid}", 
+        System.Func<AppDbContext, System.Guid, System.Threading.Tasks.Task<Microsoft.AspNetCore.Http.IResult>>(
+            fun db id -> BookHandler.getBookById db id))
+        .WithName("GetBookById")
+        .WithTags("Books")
+        .WithSummary("Get book by ID")
+        .WithDescription("Retrieves a specific book by its unique identifier") |> ignore
+    
+    app.MapPost("/api/books", 
+        System.Func<AppDbContext, BackEnd.Data.Models.Book, System.Threading.Tasks.Task<Microsoft.AspNetCore.Http.IResult>>(
+            fun db book -> BookHandler.createBook db book))
+        .WithName("CreateBook")
+        .WithTags("Books")
+        .WithSummary("Create a new book")
+        .WithDescription("Creates a new book in the library") |> ignore
+    
+    app.MapPut("/api/books/{id:guid}", 
+        System.Func<AppDbContext, System.Guid, BackEnd.Data.Models.Book, System.Threading.Tasks.Task<Microsoft.AspNetCore.Http.IResult>>(
+            fun db id book -> BookHandler.updateBook db id book))
+        .WithName("UpdateBook")
+        .WithTags("Books")
+        .WithSummary("Update a book")
+        .WithDescription("Updates an existing book") |> ignore
+    
+    app.MapDelete("/api/books/{id:guid}", 
+        System.Func<AppDbContext, System.Guid, System.Threading.Tasks.Task<Microsoft.AspNetCore.Http.IResult>>(
+            fun db id -> BookHandler.deleteBook db id))
+        .WithName("DeleteBook")
+        .WithTags("Books")
+        .WithSummary("Delete a book")
+        .WithDescription("Deletes a book from the library") |> ignore
+
+    // Borrowing endpoints
+    app.MapGet("/api/borrowings", 
+        System.Func<AppDbContext, System.Threading.Tasks.Task<Microsoft.AspNetCore.Http.IResult>>(
+            fun db -> BookHandler.getAllBorrowings db))
+        .WithName("GetAllBorrowings")
+        .WithTags("Borrowings")
+        .WithSummary("Get all borrowings")
+        .WithDescription("Retrieves all borrowing records, including active, returned, and overdue books") |> ignore
+
+
+    app.MapPost("/api/books/{bookId:guid}/borrow", 
+        System.Func<AppDbContext, System.Guid, BackEnd.Data.Models.BorrowRequest, System.Threading.Tasks.Task<Microsoft.AspNetCore.Http.IResult>>(
+            fun db bookId request -> BookHandler.borrowBook db bookId request.UserId))
+        .WithName("BorrowBook")
+        .WithTags("Borrowings")
+        .WithSummary("Borrow a book")
+        .WithDescription("Borrows a book for a user. The book must be available.") |> ignore
+    
+    app.MapPost("/api/borrowings/{borrowingId:guid}/return", 
+        System.Func<AppDbContext, System.Guid, BackEnd.Data.Models.ReturnRequest, System.Threading.Tasks.Task<Microsoft.AspNetCore.Http.IResult>>(
+            fun db borrowingId request -> BookHandler.returnBook db borrowingId request.UserId))
+        .WithName("ReturnBook")
+        .WithTags("Borrowings")
+        .WithSummary("Return a borrowed book")
+        .WithDescription("Returns a borrowed book and makes it available again") |> ignore
+    
+    app.MapGet("/api/users/{userId:guid}/borrowings", 
+        System.Func<AppDbContext, System.Guid, System.Threading.Tasks.Task<Microsoft.AspNetCore.Http.IResult>>(
+            fun db userId -> BookHandler.getUserBorrowings db userId))
+        .WithName("GetUserBorrowings")
+        .WithTags("Borrowings")
+        .WithSummary("Get user's borrowings")
+        .WithDescription("Retrieves all borrowing records for a specific user, including active, returned, and overdue books") |> ignore
 
     // Health check endpoint
     app.MapGet("/health", 
