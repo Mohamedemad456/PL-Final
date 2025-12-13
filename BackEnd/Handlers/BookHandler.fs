@@ -97,7 +97,7 @@ let private updateBookInDbAsync (db: AppDbContext) (book: Book) : Task<Result<Bo
         }      
 
 
-
+// CRUD
 
 let getBookById (db: AppDbContext) (bookId: Guid) : Task<IResult> =
         task {
@@ -130,4 +130,41 @@ let createBook (db: AppDbContext) (book: Book) : Task<IResult> =
                        | Ok createdBook -> Results.Created($"/api/books/{createdBook.Id}", createdBook)
                        | Error errorMsg -> Results.Problem(title = "Failed to create book", detail = errorMsg, statusCode = 500)
         }
-        
+
+
+let updateBook (db: AppDbContext) (bookId: Guid) (book: Book) : Task<IResult> =
+        task {
+            let! bookOpt = findBookByIdAsync db bookId
+            match bookOpt with
+            | None -> return Results.NotFound("Book not found")
+            | Some existingBook ->
+                match validateBook book.Title book.Author book.TotalCopies with
+                | Error msg -> return Results.BadRequest(msg)
+                | Ok _ ->
+                    existingBook.Title <- book.Title
+                    existingBook.Author <- book.Author
+                    existingBook.ISBN <- book.ISBN
+                    existingBook.Description <- book.Description
+                    existingBook.TotalCopies <- book.TotalCopies
+                    existingBook.UpdatedAt <- Nullable<DateTime>(DateTime.UtcNow)
+                    
+                    // Adjust available copies if total copies changed
+                    let diff = book.TotalCopies - existingBook.TotalCopies
+                    existingBook.AvailableCopies <- existingBook.AvailableCopies + diff
+                    if existingBook.AvailableCopies < 0 then
+                        existingBook.AvailableCopies <- 0
+                    
+                    let! result = updateBookInDbAsync db existingBook
+                    return match result with
+                           | Ok updated -> Results.Ok(existingBook)
+                           | Error errorMsg -> Results.Problem(title = "Failed to update book", detail = errorMsg, statusCode = 500)
+        }
+
+
+let deleteBook (db: AppDbContext) (bookId: Guid) : Task<IResult> =
+        task {
+            let! result = deleteBookFromDbAsync db bookId
+            return match result with
+                   | Ok _ -> Results.NoContent()
+                   | Error errorMsg -> Results.NotFound(errorMsg)
+        }
