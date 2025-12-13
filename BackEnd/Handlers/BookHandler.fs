@@ -57,11 +57,9 @@ module BookHandler =
     let private updateBookInDbAsync (db: AppDbContext) (book: Book) : Task<Result<Book, string>> =
         task {
             try
-                // Check if entity is already tracked
                 let entry = db.Entry(book)
                 if entry.State = EntityState.Detached then
                     db.Books.Update(book) |> ignore
-                // If already tracked, changes are automatically detected
                 let! _ = db.SaveChangesAsync()
                 return Ok book
             with
@@ -79,19 +77,15 @@ module BookHandler =
                 match bookOpt with
                 | None -> return Error "Book not found"
                 | Some book ->
-                    // Check if there are any borrowings associated with this book
                     let! borrowingsCount = db.Borrowings.Where(fun b -> b.BookId = bookId).CountAsync()
                     if borrowingsCount > 0 then
-                        // Check if there are any active borrowings
                         let! activeBorrowingsCount = db.Borrowings.Where(fun b -> b.BookId = bookId && (b.Status = "Active" || b.Status = "Overdue")).CountAsync()
                         if activeBorrowingsCount > 0 then
                             return Error $"Cannot delete book: There are {activeBorrowingsCount} active or overdue borrowings associated with this book. Please return all borrowed copies first."
                         else
-                            // Delete all associated borrowings (all are returned)
                             let! borrowings = db.Borrowings.Where(fun b -> b.BookId = bookId).ToListAsync()
                             for borrowing in borrowings do
                                 db.Borrowings.Remove(borrowing) |> ignore
-                            // Now delete the book
                             db.Books.Remove(book) |> ignore
                             let! _ = db.SaveChangesAsync()
                             return Ok ()
