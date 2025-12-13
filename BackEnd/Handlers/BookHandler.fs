@@ -12,6 +12,13 @@ open Microsoft.FSharp.Core
 
 module BookHandler =
 
+
+let private validateBook (title: string) (author: string) (totalCopies: int) : Result<unit, string> =
+        if String.IsNullOrWhiteSpace(title) then Error "Title is required"
+        elif String.IsNullOrWhiteSpace(author) then Error "Author is required"
+        elif totalCopies < 1 then Error "Total copies must be at least 1"
+        else Ok ()
+
 let private findBookByIdAsync (db: AppDbContext) (bookId: Guid) : Task<Option<Book>> =
         task {
             let! book = db.Books.FirstOrDefaultAsync(fun b -> b.Id = bookId)
@@ -88,3 +95,7 @@ let private updateBookInDbAsync (db: AppDbContext) (book: Book) : Task<Result<Bo
             let! books = getAllBooksAsync db searchTerm
             return Results.Ok(books)
         }      
+
+
+
+
