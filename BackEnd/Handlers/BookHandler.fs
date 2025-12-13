@@ -99,3 +99,10 @@ let private updateBookInDbAsync (db: AppDbContext) (book: Book) : Task<Result<Bo
 
 
 
+let getBookById (db: AppDbContext) (bookId: Guid) : Task<IResult> =
+        task {
+            let! bookOpt = findBookByIdAsync db bookId
+            return match bookOpt with
+                   | None -> Results.NotFound("Book not found")
+                   | Some book -> Results.Ok(book)
+        }
