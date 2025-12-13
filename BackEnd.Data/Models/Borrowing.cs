@@ -2,6 +2,7 @@
 // Developer: Mohamed Emad
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace BackEnd.Data.Models;
 
@@ -30,9 +31,11 @@ public class Borrowing
     
     // Navigation properties
     [ForeignKey("UserId")]
+    [JsonIgnore]
     public virtual User? User { get; set; }
     
     [ForeignKey("BookId")]
+    [JsonIgnore]
     public virtual Book? Book { get; set; }
 }
 

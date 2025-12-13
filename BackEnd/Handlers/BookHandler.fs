@@ -1,4 +1,16 @@
-amespace BackEnd.Handlers
+namespace BackEnd.Handlers
+
+open Microsoft.AspNetCore.Http
+open Microsoft.AspNetCore.Http.HttpResults
+open Microsoft.EntityFrameworkCore
+open BackEnd.Data
+open BackEnd.Data.Models
+open System
+open System.Linq
+open System.Threading.Tasks
+open Microsoft.FSharp.Core
+
+namespace BackEnd.Handlers
 
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Http.HttpResults
@@ -12,14 +24,13 @@ open Microsoft.FSharp.Core
 
 module BookHandler =
 
-
-let private validateBook (title: string) (author: string) (totalCopies: int) : Result<unit, string> =
+    let private validateBook (title: string) (author: string) (totalCopies: int) : Result<unit, string> =
         if String.IsNullOrWhiteSpace(title) then Error "Title is required"
         elif String.IsNullOrWhiteSpace(author) then Error "Author is required"
         elif totalCopies < 1 then Error "Total copies must be at least 1"
         else Ok ()
 
-let private findBookByIdAsync (db: AppDbContext) (bookId: Guid) : Task<Option<Book>> =
+    let private findBookByIdAsync (db: AppDbContext) (bookId: Guid) : Task<Option<Book>> =
         task {
             let! book = db.Books.FirstOrDefaultAsync(fun b -> b.Id = bookId)
             return match book with
@@ -27,22 +38,22 @@ let private findBookByIdAsync (db: AppDbContext) (bookId: Guid) : Task<Option<Bo
                    | _ -> Some book
         }
 
-let private getAllBooksAsync (db: AppDbContext) (searchTerm: string option) : Task<System.Collections.Generic.List<Book>> =
+    let private getAllBooksAsync (db: AppDbContext) (searchTerm: string option) : Task<System.Collections.Generic.List<Book>> =
         task {
             let mutable query = db.Books.AsQueryable()
             query <- match searchTerm with
-                    | Some term when not (String.IsNullOrWhiteSpace(term)) ->
-                        let termLower = term.ToLower()
-                        query.Where(fun b -> 
-                            b.Title.ToLower().Contains(termLower) || 
-                            b.Author.ToLower().Contains(termLower) ||
-                            (b.ISBN <> null && b.ISBN.ToLower().Contains(termLower)))
-                    | _ -> query
+                        | Some term when not (String.IsNullOrWhiteSpace(term)) ->
+                            let termLower = term.ToLower()
+                            query.Where(fun b -> 
+                                b.Title.ToLower().Contains(termLower) || 
+                                b.Author.ToLower().Contains(termLower) ||
+                                (b.ISBN <> null && b.ISBN.ToLower().Contains(termLower)))
+                        | _ -> query
             let query = query.OrderBy(fun b -> b.Title)
             return! query.ToListAsync()
         }
 
-let private createBookInDbAsync (db: AppDbContext) (book: Book) : Task<Result<Book, string>> =
+    let private createBookInDbAsync (db: AppDbContext) (book: Book) : Task<Result<Book, string>> =
         task {
             try
                 db.Books.Add(book) |> ignore
@@ -55,7 +66,7 @@ let private createBookInDbAsync (db: AppDbContext) (book: Book) : Task<Result<Bo
                 return Error $"Unexpected error: {ex.Message}"
         }        
 
-let private updateBookInDbAsync (db: AppDbContext) (book: Book) : Task<Result<Book, string>> =
+    let private updateBookInDbAsync (db: AppDbContext) (book: Book) : Task<Result<Book, string>> =
         task {
             try
                 // Check if entity is already tracked
@@ -73,7 +84,7 @@ let private updateBookInDbAsync (db: AppDbContext) (book: Book) : Task<Result<Bo
                 return Error $"Unexpected error: {ex.Message}. Type: {ex.GetType().Name}"
         }
 
- let private deleteBookFromDbAsync (db: AppDbContext) (bookId: Guid) : Task<Result<unit, string>> =
+    let private deleteBookFromDbAsync (db: AppDbContext) (bookId: Guid) : Task<Result<unit, string>> =
         task {
             try
                 let! bookOpt = findBookByIdAsync db bookId
@@ -90,16 +101,15 @@ let private updateBookInDbAsync (db: AppDbContext) (book: Book) : Task<Result<Bo
                 return Error $"Unexpected error: {ex.Message}"
         }
 
- let getBooks (db: AppDbContext) (searchTerm: string option) : Task<IResult> =
+    let getBooks (db: AppDbContext) (searchTerm: string option) : Task<IResult> =
         task {
             let! books = getAllBooksAsync db searchTerm
             return Results.Ok(books)
         }      
 
+    // CRUD
 
-// CRUD
-
-let getBookById (db: AppDbContext) (bookId: Guid) : Task<IResult> =
+    let getBookById (db: AppDbContext) (bookId: Guid) : Task<IResult> =
         task {
             let! bookOpt = findBookByIdAsync db bookId
             return match bookOpt with
@@ -107,9 +117,7 @@ let getBookById (db: AppDbContext) (bookId: Guid) : Task<IResult> =
                    | Some book -> Results.Ok(book)
         }
 
-
-
-let createBook (db: AppDbContext) (book: Book) : Task<IResult> =
+    let createBook (db: AppDbContext) (book: Book) : Task<IResult> =
         task {
             match validateBook book.Title book.Author book.TotalCopies with
             | Error msg -> return Results.BadRequest(msg)
@@ -131,8 +139,7 @@ let createBook (db: AppDbContext) (book: Book) : Task<IResult> =
                        | Error errorMsg -> Results.Problem(title = "Failed to create book", detail = errorMsg, statusCode = 500)
         }
 
-
-let updateBook (db: AppDbContext) (bookId: Guid) (book: Book) : Task<IResult> =
+    let updateBook (db: AppDbContext) (bookId: Guid) (book: Book) : Task<IResult> =
         task {
             let! bookOpt = findBookByIdAsync db bookId
             match bookOpt with
@@ -160,8 +167,7 @@ let updateBook (db: AppDbContext) (bookId: Guid) (book: Book) : Task<IResult> =
                            | Error errorMsg -> Results.Problem(title = "Failed to update book", detail = errorMsg, statusCode = 500)
         }
 
-
-let deleteBook (db: AppDbContext) (bookId: Guid) : Task<IResult> =
+    let deleteBook (db: AppDbContext) (bookId: Guid) : Task<IResult> =
         task {
             let! result = deleteBookFromDbAsync db bookId
             return match result with
@@ -169,10 +175,8 @@ let deleteBook (db: AppDbContext) (bookId: Guid) : Task<IResult> =
                    | Error errorMsg -> Results.NotFound(errorMsg)
         }
 
-
-
-// Borrowing handlers MS
-let private hasActiveBorrowingAsync (db: AppDbContext) (userId: Guid) (bookId: Guid) : Task<bool> =
+    // Borrowing handlers MS
+    let private hasActiveBorrowingAsync (db: AppDbContext) (userId: Guid) (bookId: Guid) : Task<bool> =
         task {
             let query = db.Borrowings.Where(fun b -> 
                 b.UserId = userId && 
@@ -182,7 +186,7 @@ let private hasActiveBorrowingAsync (db: AppDbContext) (userId: Guid) (bookId: G
             return existingBorrowing <> null
         }
 
-let private validateBorrowRequest (book: Book option) (userId: Guid) (hasActiveBorrowing: bool) : Result<unit, string> =
+    let private validateBorrowRequest (book: Book option) (userId: Guid) (hasActiveBorrowing: bool) : Result<unit, string> =
         match book with
         | None -> Error "Book not found"
         | Some b ->
@@ -190,7 +194,7 @@ let private validateBorrowRequest (book: Book option) (userId: Guid) (hasActiveB
             elif b.AvailableCopies < 1 then Error "No copies available"
             else Ok ()
 
-let private createBorrowingAsync (db: AppDbContext) (userId: Guid) (bookId: Guid) : Task<Result<Borrowing, string>> =
+    let private createBorrowingAsync (db: AppDbContext) (userId: Guid) (bookId: Guid) : Task<Result<Borrowing, string>> =
         task {
             try
                 let! bookOpt = findBookByIdAsync db bookId
@@ -287,16 +291,16 @@ let private createBorrowingAsync (db: AppDbContext) (userId: Guid) (bookId: Guid
             | Ok _ ->
                 let! result = createBorrowingAsync db userId bookId
                 return match result with
-                    | Ok borrowing -> Results.Created($"/api/borrowings/{borrowing.Id}", borrowing)
-                    | Error errorMsg -> Results.Problem(title = "Failed to borrow book", detail = errorMsg, statusCode = 500)
+                       | Ok borrowing -> Results.Created($"/api/borrowings/{borrowing.Id}", borrowing)
+                       | Error errorMsg -> Results.Problem(title = "Failed to borrow book", detail = errorMsg, statusCode = 500)
         }
 
     let returnBook (db: AppDbContext) (borrowingId: Guid) (userId: Guid) : Task<IResult> =
         task {
             let! result = returnBorrowingAsync db borrowingId userId
             return match result with
-                | Ok borrowing -> Results.Ok(borrowing)
-                | Error errorMsg -> Results.BadRequest(errorMsg)
+                   | Ok borrowing -> Results.Ok(borrowing)
+                   | Error errorMsg -> Results.BadRequest(errorMsg)
         }
 
     let getUserBorrowings (db: AppDbContext) (userId: Guid) : Task<IResult> =

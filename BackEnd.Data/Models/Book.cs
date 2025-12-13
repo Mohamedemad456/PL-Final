@@ -1,6 +1,7 @@
 // Role: Book Model Developer
 // Developer: Mohamed Emad
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace BackEnd.Data.Models;
 
@@ -34,6 +35,7 @@ public class Book
     public DateTime? UpdatedAt { get; set; }
     
     // Navigation property
+    [JsonIgnore]
     public virtual ICollection<Borrowing> Borrowings { get; set; } = new List<Borrowing>();
 }
 

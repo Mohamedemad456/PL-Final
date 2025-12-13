@@ -71,22 +71,33 @@ class ApiClient {
       try {
         const errorText = await response.text();
         if (errorText) {
-          // Try to parse as JSON first
           try {
             const errorJson = JSON.parse(errorText);
             errorMessage = errorJson.message || errorJson.detail || errorText;
           } catch {
-            // If not JSON, use the text as-is
             errorMessage = errorText;
           }
         }
       } catch {
-        // If reading response fails, use default message
       }
       throw new Error(errorMessage);
     }
 
-    return response.json();
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
+    const text = await response.text();
+    
+    if (!text || text.trim().length === 0) {
+      return undefined as T;
+    }
+
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      return undefined as T;
+    }
   }
 
   // Auth
