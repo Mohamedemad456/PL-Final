@@ -106,3 +106,28 @@ let getBookById (db: AppDbContext) (bookId: Guid) : Task<IResult> =
                    | None -> Results.NotFound("Book not found")
                    | Some book -> Results.Ok(book)
         }
+
+
+
+let createBook (db: AppDbContext) (book: Book) : Task<IResult> =
+        task {
+            match validateBook book.Title book.Author book.TotalCopies with
+            | Error msg -> return Results.BadRequest(msg)
+            | Ok _ ->
+                let newBook = Book()
+                newBook.Id <- Guid.NewGuid()
+                newBook.Title <- book.Title
+                newBook.Author <- book.Author
+                newBook.ISBN <- book.ISBN
+                newBook.Description <- book.Description
+                newBook.TotalCopies <- book.TotalCopies
+                newBook.AvailableCopies <- book.TotalCopies
+                newBook.CreatedAt <- DateTime.UtcNow
+                newBook.UpdatedAt <- Nullable<DateTime>()
+                
+                let! result = createBookInDbAsync db newBook
+                return match result with
+                       | Ok createdBook -> Results.Created($"/api/books/{createdBook.Id}", createdBook)
+                       | Error errorMsg -> Results.Problem(title = "Failed to create book", detail = errorMsg, statusCode = 500)
+        }
+        
