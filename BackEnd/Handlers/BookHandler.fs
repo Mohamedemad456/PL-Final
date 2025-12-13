@@ -31,13 +31,13 @@ let private getAllBooksAsync (db: AppDbContext) (searchTerm: string option) : Ta
         task {
             let mutable query = db.Books.AsQueryable()
             query <- match searchTerm with
-                     | Some term when not (String.IsNullOrWhiteSpace(term)) ->
-                         let termLower = term.ToLower()
-                         query.Where(fun b -> 
-                             b.Title.ToLower().Contains(termLower) || 
-                             b.Author.ToLower().Contains(termLower) ||
-                             (b.ISBN <> null && b.ISBN.ToLower().Contains(termLower)))
-                     | _ -> query
+                    | Some term when not (String.IsNullOrWhiteSpace(term)) ->
+                        let termLower = term.ToLower()
+                        query.Where(fun b -> 
+                            b.Title.ToLower().Contains(termLower) || 
+                            b.Author.ToLower().Contains(termLower) ||
+                            (b.ISBN <> null && b.ISBN.ToLower().Contains(termLower)))
+                    | _ -> query
             let query = query.OrderBy(fun b -> b.Title)
             return! query.ToListAsync()
         }
@@ -167,4 +167,162 @@ let deleteBook (db: AppDbContext) (bookId: Guid) : Task<IResult> =
             return match result with
                    | Ok _ -> Results.NoContent()
                    | Error errorMsg -> Results.NotFound(errorMsg)
+        }
+
+
+
+// Borrowing handlers MS
+let private hasActiveBorrowingAsync (db: AppDbContext) (userId: Guid) (bookId: Guid) : Task<bool> =
+        task {
+            let query = db.Borrowings.Where(fun b -> 
+                b.UserId = userId && 
+                b.BookId = bookId && 
+                (b.Status = "Active" || b.Status = "Overdue"))
+            let! existingBorrowing = query.FirstOrDefaultAsync()
+            return existingBorrowing <> null
+        }
+
+let private validateBorrowRequest (book: Book option) (userId: Guid) (hasActiveBorrowing: bool) : Result<unit, string> =
+        match book with
+        | None -> Error "Book not found"
+        | Some b ->
+            if hasActiveBorrowing then Error "You already have an active borrowing for this book. Please return it before borrowing again."
+            elif b.AvailableCopies < 1 then Error "No copies available"
+            else Ok ()
+
+let private createBorrowingAsync (db: AppDbContext) (userId: Guid) (bookId: Guid) : Task<Result<Borrowing, string>> =
+        task {
+            try
+                let! bookOpt = findBookByIdAsync db bookId
+                match bookOpt with
+                | None -> return Error "Book not found"
+                | Some book ->
+                    let borrowing = Borrowing()
+                    borrowing.Id <- Guid.NewGuid()
+                    borrowing.UserId <- userId
+                    borrowing.BookId <- bookId
+                    borrowing.BorrowedDate <- DateTime.UtcNow
+                    borrowing.ReturnedDate <- Nullable<DateTime>()
+                    borrowing.DueDate <- DateTime.UtcNow.AddDays(14)
+                    borrowing.Status <- "Active"
+                    
+                    book.AvailableCopies <- book.AvailableCopies - 1
+                    db.Borrowings.Add(borrowing) |> ignore
+                    let! _ = db.SaveChangesAsync()
+                    return Ok borrowing
+            with
+            | :? DbUpdateException as ex ->
+                let innerMsg = if ex.InnerException <> null then ex.InnerException.Message else ""
+                return Error $"Failed to borrow book: {ex.Message}. Inner: {innerMsg}"
+            | ex ->
+                return Error $"Unexpected error: {ex.Message}. Type: {ex.GetType().Name}"
+        }
+
+    let private returnBorrowingAsync (db: AppDbContext) (borrowingId: Guid) (userId: Guid) : Task<Result<Borrowing, string>> =
+        task {
+            try
+                let query = db.Borrowings.Include(fun b -> b.Book)
+                let! borrowing = query.FirstOrDefaultAsync(fun b -> b.Id = borrowingId && b.UserId = userId)
+                
+                match borrowing with
+                | null -> return Error "Borrowing record not found"
+                | b when b.Status = "Returned" -> return Error "Book already returned"
+                | b ->
+                    b.ReturnedDate <- Nullable<DateTime>(DateTime.UtcNow)
+                    b.Status <- "Returned"
+                    
+                    match b.Book with
+                    | null -> return Error "Book not found"
+                    | book ->
+                        book.AvailableCopies <- book.AvailableCopies + 1
+                        let! _ = db.SaveChangesAsync()
+                        return Ok b
+            with
+            | :? DbUpdateException as ex ->
+                let innerMsg = if ex.InnerException <> null then ex.InnerException.Message else ""
+                return Error $"Failed to return book: {ex.Message}. Inner: {innerMsg}"
+            | ex ->
+                return Error $"Unexpected error: {ex.Message}. Type: {ex.GetType().Name}"
+        }
+
+    let private getUserBorrowingsAsync (db: AppDbContext) (userId: Guid) : Task<System.Collections.Generic.List<Borrowing>> =
+        task {
+            let query = db.Borrowings.Include(fun b -> b.Book)
+            let query = query.Where(fun b -> b.UserId = userId)
+            let query = query.OrderByDescending(fun b -> b.BorrowedDate)
+            return! query.ToListAsync()
+        }
+
+    let private updateOverdueStatusAsync (db: AppDbContext) : Task<unit> =
+        task {
+            try
+                let query = db.Borrowings.Where(fun b -> b.Status = "Active" && b.DueDate < DateTime.UtcNow)
+                let! overdueBorrowings = query.ToListAsync()
+                
+                for borrowing in overdueBorrowings do
+                    borrowing.Status <- "Overdue"
+                
+                if overdueBorrowings.Count > 0 then
+                    let! _ = db.SaveChangesAsync()
+                    ()
+            with
+            | ex ->
+                System.Diagnostics.Debug.WriteLine($"Error updating overdue status: {ex.Message}")
+                ()
+        }
+
+    let getAllBorrowingsAsync (db: AppDbContext) : Task<System.Collections.Generic.List<Borrowing>> =
+        task {
+            let query = db.Borrowings.Include(fun b -> b.Book).Include(fun b -> b.User)
+            let query = query.OrderByDescending(fun b -> b.BorrowedDate)
+            return! query.ToListAsync()
+        }
+
+    let borrowBook (db: AppDbContext) (bookId: Guid) (userId: Guid) : Task<IResult> =
+        task {
+            let! bookOpt = findBookByIdAsync db bookId
+            let! hasActiveBorrowing = hasActiveBorrowingAsync db userId bookId
+            match validateBorrowRequest bookOpt userId hasActiveBorrowing with
+            | Error msg -> return Results.BadRequest(msg)
+            | Ok _ ->
+                let! result = createBorrowingAsync db userId bookId
+                return match result with
+                    | Ok borrowing -> Results.Created($"/api/borrowings/{borrowing.Id}", borrowing)
+                    | Error errorMsg -> Results.Problem(title = "Failed to borrow book", detail = errorMsg, statusCode = 500)
+        }
+
+    let returnBook (db: AppDbContext) (borrowingId: Guid) (userId: Guid) : Task<IResult> =
+        task {
+            let! result = returnBorrowingAsync db borrowingId userId
+            return match result with
+                | Ok borrowing -> Results.Ok(borrowing)
+                | Error errorMsg -> Results.BadRequest(errorMsg)
+        }
+
+    let getUserBorrowings (db: AppDbContext) (userId: Guid) : Task<IResult> =
+        task {
+            try
+                do! updateOverdueStatusAsync db
+                let! borrowings = getUserBorrowingsAsync db userId
+                return Results.Ok(borrowings)
+            with
+            | :? DbUpdateException as ex ->
+                let innerMsg = if ex.InnerException <> null then ex.InnerException.Message else ""
+                return Results.Problem(
+                    title = "Failed to retrieve borrowings",
+                    detail = $"Database error: {ex.Message}. Inner: {innerMsg}",
+                    statusCode = 500
+                )
+            | ex ->
+                return Results.Problem(
+                    title = "Failed to retrieve borrowings",
+                    detail = $"Unexpected error: {ex.Message}. Type: {ex.GetType().Name}",
+                    statusCode = 500
+                )
+        }
+    
+    let getAllBorrowings (db: AppDbContext) : Task<IResult> =
+        task {
+            let! borrowings = getAllBorrowingsAsync db
+            return Results.Ok(borrowings)
         }
